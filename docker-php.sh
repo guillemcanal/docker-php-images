@@ -8,12 +8,12 @@ docker_php_init() {
 		echo "export DOCKER_PHP_VERSION=$DEFAULT_PHP_VERSION" > $HOME/.docker.php_version
 	fi
 
-	local DEFAULT_PHP_IMAGE="${HOME}/php"
+	local DEFAULT_PHP_IMAGE="${USER}/php"
 	if [ ! -f $HOME/.docker.php_image ];then
 		echo "export DOCKER_PHP_IMAGE=$DEFAULT_PHP_IMAGE" > $HOME/.docker.php_image
 	fi
 
-	local DEFAULT_PHP_IMAGE_VARIANT="-alpine"
+	local DEFAULT_PHP_IMAGE_VARIANT="-cli-alpine"
 	if [ ! -f $HOME/.docker.php_image.variant ];then
 		echo "export DOCKER_PHP_IMAGE_VARIANT=$DEFAULT_PHP_IMAGE_VARIANT" > $HOME/.docker.php_image.variant
 	fi
@@ -42,10 +42,16 @@ docker_php_info() {
 	echo "image:   ${DOCKER_PHP_IMAGE}"
 	echo "version: ${DOCKER_PHP_VERSION}"
 	echo "variant: ${DOCKER_PHP_IMAGE_VARIANT}"
+	echo "shell: ${DOCKER_PHP_UNIX_SHELL}"
 }
 
-# List Available PHP images
-docker_php_available() {
+# List local PHP Docker images
+docker_php_list() {
+	docker images ${DOCKER_PHP_IMAGE}
+}
+
+# List remote PHP Docker images
+docker_php_list_remote() {
 	curl -s "https://registry.hub.docker.com/v1/repositories/${DOCKER_PHP_IMAGE}/tags"  | jq '.[] | .name' -r | less
 }
 
@@ -72,13 +78,32 @@ docker_php_version() {
 
 # Run a PHP container using a UNIX Shell (bash, ash, etc...)
 docker_php_shell() {
-	docker run --rm -it -v $(pwd):/app -w /app --entrypoint ${DOCKER_PHP_UNIX_SHELL} ${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT}
+	docker run --rm -it \
+	-v $(pwd):/app \
+	-v $HOME/.docker.composer:/var/composer \
+	-w /app \
+	--entrypoint ${DOCKER_PHP_UNIX_SHELL} \
+	${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT}
 }
 
 # Run PHP in a Docker container
 # @TODO support Linux machine (switch to the current user)
-docker_php_run () {
-	docker run --rm -it -v $HOME/.docker.composer:/var/composer -v $(pwd):/app -w /app ${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} "$@"
+docker_php_run() {
+	local DOCKER_ARGS=
+	if [ "$(uname -s)" = "Linux" ];then
+		DOCKER_ARGS="-e USER_UID=$(id -u) -e USER_GID=$(id -g)"
+	fi
+
+	docker run --rm -it \
+	-v $HOME/.docker.composer:/var/composer \
+	-v $(pwd):/app \
+	-w /app \
+	${DOCKER_ARGS} \
+	${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} "$@"
+}
+
+docker_php_push() {
+	docker push ${DOCKER_PHP_IMAGE}
 }
 
 # PHP main entrypoint
@@ -94,16 +119,22 @@ docker_php() {
 			shift; docker_php_image_variant "$@"
 			;;
 		shell)
-			shift; docker_php_shell "$@"
+			docker_php_shell
 			;;
 		info)
-			shift; docker_php_info "$@"
+			docker_php_info
 			;;
 		update)
-			shift; docker_php_update "$@"
+			docker_php_update
 			;;
-		available)
-			shift; docker_php_available "$@"
+		list)
+			docker_php_list
+			;;
+		list-rm)
+			docker_php_list_remote
+			;;
+		push)
+			docker_php_push
 			;;
 		*)
 			docker_php_run "$@"
@@ -114,4 +145,5 @@ docker_php() {
 docker_php_init
 
 alias php="docker_php"
+alias composer="php composer"
 

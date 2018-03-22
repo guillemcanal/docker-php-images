@@ -1,0 +1,36 @@
+#!/bin/sh
+set -e
+
+#
+# Install PHP addons (either PHP cli tools or PHP extensions)
+#
+
+install_addon() {
+	ADDON_NAME="$1"
+	ADDON_SCRIPT="/php-addons/${ADDON_NAME}.sh"
+
+	if [ ! -f "$ADDON_SCRIPT" ];then
+		echo "[INFO] installing $ADDON_NAME with docker-php-ext-install"
+		docker-php-ext-install $ADDON_NAME
+		return
+	fi
+
+	echo "[INFO] installing $ADDON_NAME with $ADDON_SCRIPT"
+	$ADDON_SCRIPT install
+}
+
+main() {
+	# install phpize dependencies
+	apk add --no-cache --update --virtual .phpize-deps $PHPIZE_DEPS
+
+	ADDONS_LIST="$@"
+	for ADDON_NAME in $ADDONS_LIST; do
+		install_addon $ADDON_NAME
+	done
+
+	# cleanup phpize dependencies
+	apk del --no-cache .phpize-deps
+	rm -fr /var/cache/apk/* /tmp/*
+}
+
+main "$@"
