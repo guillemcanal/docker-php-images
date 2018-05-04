@@ -2,12 +2,11 @@
 set -e
 
 install() {
-	MEMCACHED_DEPS="zlib-dev libmemcached-dev cyrus-sasl-dev"
 	apk add --no-cache --update libmemcached-libs zlib
-	apk add --no-cache --update --virtual .memcached-deps $MEMCACHED_DEPS
-    yes '' | pecl install memcached
-    docker-php-ext-enable memcached
-    apk del .memcached-deps
+	apk add --no-cache --update --virtual .memcached-deps zlib-dev libmemcached-dev cyrus-sasl-dev
+	yes '' | pecl install memcached
+	docker-php-ext-enable memcached
+	apk del --no-cache .memcached-deps
 }
 
 case "$1" in

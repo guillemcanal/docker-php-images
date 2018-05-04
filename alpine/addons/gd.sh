@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+#@todo improve me
 install() {
 	apk add --no-cache freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev
 	

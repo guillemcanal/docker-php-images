@@ -42,7 +42,8 @@ docker_php_info() {
 	echo "image:   ${DOCKER_PHP_IMAGE}"
 	echo "version: ${DOCKER_PHP_VERSION}"
 	echo "variant: ${DOCKER_PHP_IMAGE_VARIANT}"
-	echo "shell: ${DOCKER_PHP_UNIX_SHELL}"
+	echo "shell:   ${DOCKER_PHP_UNIX_SHELL}"
+	echo "addons:  $(php sh -c 'echo $PHP_ADDONS_LIST')"
 }
 
 # List local PHP Docker images
@@ -78,20 +79,23 @@ docker_php_version() {
 
 # Run a PHP container using a UNIX Shell (bash, ash, etc...)
 docker_php_shell() {
+	local DOCKER_ARGS="-v /var/run/docker.sock:/var/run/docker.sock:ro"
+
 	docker run --rm -it \
 	-v $(pwd):/app \
 	-v $HOME/.docker.composer:/var/composer \
 	-w /app \
 	--entrypoint ${DOCKER_PHP_UNIX_SHELL} \
+	${DOCKER_ARGS} \
 	${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT}
 }
 
 # Run PHP in a Docker container
 # @TODO support Linux machine (switch to the current user)
 docker_php_run() {
-	local DOCKER_ARGS=
+	local DOCKER_ARGS="-v /var/run/docker.sock:/var/run/docker.sock:ro"
 	if [ "$(uname -s)" = "Linux" ];then
-		DOCKER_ARGS="-e USER_UID=$(id -u) -e USER_GID=$(id -g)"
+		DOCKER_ARGS="$DOCKER_ARGS -e USER_UID=$(id -u) -e USER_GID=$(id -g)"
 	fi
 
 	docker run --rm -it \
@@ -104,6 +108,14 @@ docker_php_run() {
 
 docker_php_push() {
 	docker push ${DOCKER_PHP_IMAGE}
+}
+
+# build a php image
+docker_php_build() {
+	local SCRIPT_DIR=$(docker_script_directory)
+	pushd "$SCRIPT_DIR" > /dev/null
+		make -e build
+	popd > /dev/null
 }
 
 # PHP main entrypoint
@@ -136,14 +148,30 @@ docker_php() {
 		push)
 			docker_php_push
 			;;
+		build)
+			docker_php_build
+			;;
 		*)
 			docker_php_run "$@"
 			;;
 	esac
 }
 
-docker_php_init
+docker_script_directory() {
+	SOURCE="${BASH_SOURCE[0]}"
+	while [ -h "$SOURCE" ]; do
+		DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+		SOURCE="$(readlink "$SOURCE")"
+		[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+	done
 
-alias php="docker_php"
-alias composer="php composer"
+	echo "$(cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+main() {
+	docker_php_init
+	docker_php "$@"
+}
+
+main "$@"
 

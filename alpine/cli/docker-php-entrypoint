@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# create user if no exist
+# create user if it doesn't exist
 create_user() {
 	USER_NAME=${USER_NAME:-"user"}
 	addgroup -g ${USER_GID} ${USER_NAME} 2> /dev/null || true
@@ -10,7 +10,7 @@ create_user() {
 
 main() {
 	# load addons environment variables
-	for ADDON_NAME in $ADDONS_LIST; do
+	for ADDON_NAME in $PHP_ADDONS_LIST; do
 		ADDON_SCRIPT="/php-addons/$ADDON_NAME.sh"
 		if [ -f "$ADDON_SCRIPT" ];then
 			source $ADDON_SCRIPT setenv
@@ -30,7 +30,6 @@ main() {
 	# execute the php script with a given user
 	if [ ! -z "${USER_UID}" ] && [ ! -z "${USER_GID}" ];then
 		create_user
-		# @todo specific to alpine use gosu for debian based dist
 		set -- su-exec ${USER_UID}:${USER_GID} "$@"
 	fi
 

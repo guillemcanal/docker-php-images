@@ -7,8 +7,7 @@ set -e
 
 install_addon() {
 	ADDON_NAME="$1"
-	ADDON_SCRIPT="/php-addons/${ADDON_NAME}.sh"
-
+	ADDON_SCRIPT="/php-addons/$ADDON_NAME.sh"
 	if [ ! -f "$ADDON_SCRIPT" ];then
 		echo "[INFO] installing $ADDON_NAME with docker-php-ext-install"
 		docker-php-ext-install $ADDON_NAME
@@ -31,6 +30,10 @@ main() {
 	# cleanup phpize dependencies
 	apk del --no-cache .phpize-deps
 	rm -fr /var/cache/apk/* /tmp/*
+
+	# cleanup pecl artifacts
+	PHP_LIB=/usr/local/lib/php
+	rm -rf $PHP_LIB/test/* $PHP_LIB/doc/* $PHP_LIB/.filemap $PHP_LIB/.registry
 }
 
 main "$@"
