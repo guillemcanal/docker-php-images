@@ -18,17 +18,11 @@ docker_php_init() {
 		echo "export DOCKER_PHP_IMAGE_VARIANT=$DEFAULT_PHP_IMAGE_VARIANT" > $HOME/.docker.php_image.variant
 	fi
 
-	local DEFAULT_PHP_UNIX_SHELL="/bin/ash"
-	if [ ! -f $HOME/.docker.php_shell ];then
-		echo "export DOCKER_PHP_UNIX_SHELL=$DEFAULT_PHP_UNIX_SHELL" > $HOME/.docker.php_shell
-	fi
-
 	mkdir -p $HOME/.docker.composer
 
 	source $HOME/.docker.php_version
 	source $HOME/.docker.php_image
 	source $HOME/.docker.php_image.variant
-	source $HOME/.docker.php_shell
 }
 
 # Update the current image
@@ -42,7 +36,6 @@ docker_php_info() {
 	echo "image:   ${DOCKER_PHP_IMAGE}"
 	echo "version: ${DOCKER_PHP_VERSION}"
 	echo "variant: ${DOCKER_PHP_IMAGE_VARIANT}"
-	echo "shell:   ${DOCKER_PHP_UNIX_SHELL}"
 	echo "addons:  $(php sh -c 'echo $PHP_ADDONS_LIST')"
 }
 
@@ -77,18 +70,6 @@ docker_php_version() {
 	export DOCKER_PHP_VERSION=$PHP_VERSION
 }
 
-# Run a PHP container using a UNIX Shell (bash, ash, etc...)
-docker_php_shell() {
-	local DOCKER_ARGS="-v /var/run/docker.sock:/var/run/docker.sock:ro"
-
-	docker run --rm -it \
-	-v $(pwd):/app \
-	-v $HOME/.docker.composer:/var/composer \
-	-w /app \
-	--entrypoint ${DOCKER_PHP_UNIX_SHELL} \
-	${DOCKER_ARGS} \
-	${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT}
-}
 
 # Run PHP in a Docker container
 # @TODO support Linux machine (switch to the current user)
@@ -99,9 +80,9 @@ docker_php_run() {
 	fi
 
 	docker run --rm -it \
+	-v $HOME:$HOME \
 	-v $HOME/.docker.composer:/var/composer \
-	-v $(pwd):/app \
-	-w /app \
+	-w $(pwd) \
 	${DOCKER_ARGS} \
 	${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} "$@"
 }
@@ -129,9 +110,6 @@ docker_php() {
 			;;
 		variant)
 			shift; docker_php_image_variant "$@"
-			;;
-		shell)
-			docker_php_shell
 			;;
 		info)
 			docker_php_info

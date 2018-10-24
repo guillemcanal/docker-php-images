@@ -13,5 +13,5 @@ COPY ${PHP_DIST}/scripts/* /usr/local/bin/
 COPY ${PHP_DIST}/cli/* /usr/local/bin/
 COPY ${PHP_DIST}/addons /php-addons
 
-RUN apk add --no-cache curl su-exec \
+RUN apk add --no-cache curl su-exec sudo \
 	&& docker-php-addons $PHP_ADDONS_LIST

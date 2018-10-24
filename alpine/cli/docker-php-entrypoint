@@ -6,6 +6,7 @@ create_user() {
 	USER_NAME=${USER_NAME:-"user"}
 	addgroup -g ${USER_GID} ${USER_NAME} 2> /dev/null || true
 	adduser -S -u ${USER_UID} -G ${USER_NAME} -s /bin/ash ${USER_NAME} 2> /dev/null || true
+	echo "${USER_NAME} ALL=NOPASSWD: ALL" > "/etc/sudoers.d/${USER_NAME}"
 }
 
 main() {
@@ -17,17 +18,17 @@ main() {
 		fi
 	done
 
-	# append the php command if the first argument if a file
-	if [ -f "$1" ]; then
+	# append the PHP command if the first argument if a non executable PHP file
+	if [[ -f "$1" && ! -x "$1" && "${1##*.}" = "php" ]]; then
 		set -- php "$@"
 	fi
 
-	# append the php command if the first argument contains a dash
+	# append the PHP command if the first argument contains a dash (php options) 
 	if [ "${1#-}" != "$1" ]; then
 		set -- php "$@"
 	fi
 
-	# execute the php script with a given user
+	# execute the commamd with a given user
 	if [ ! -z "${USER_UID}" ] && [ ! -z "${USER_GID}" ];then
 		create_user
 		set -- su-exec ${USER_UID}:${USER_GID} "$@"

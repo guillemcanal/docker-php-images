@@ -2,7 +2,7 @@
 set -e
 
 install() {
-	curl -s -L https://git.io/psysh -o /usr/local/bin/psysh
+	curl -s -L  https://psysh.org/psysh -o /usr/local/bin/psysh
 	chmod +x /usr/local/bin/psysh
 }
 

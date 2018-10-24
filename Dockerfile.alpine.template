@@ -6,7 +6,7 @@ COPY alpine/scripts/* /usr/local/bin/
 COPY alpine/<%PHP_VARIANT%>/* /usr/local/bin/
 COPY alpine/addons /php-addons
 
-RUN apk add --no-cache curl su-exec \
+RUN apk add --no-cache curl su-exec sudo \
     && apk del --no-cache .phpize-deps \
     # addons
     # cleanup phpize dependencies
