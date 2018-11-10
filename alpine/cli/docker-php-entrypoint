@@ -29,8 +29,9 @@ main() {
 	fi
 
 	# execute the commamd with a given user
-	if [ ! -z "${USER_UID}" ] && [ ! -z "${USER_GID}" ];then
+	if [ -n "${USER_UID+x}" ] && [ -n "${USER_GID+x}" ];then
 		create_user
+		echo "[docker.info] running script as $USER_NAME $USER_UID:$USER_GID"
 		set -- su-exec ${USER_UID}:${USER_GID} "$@"
 	fi
 

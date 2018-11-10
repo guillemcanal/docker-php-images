@@ -70,13 +70,13 @@ docker_php_version() {
 	export DOCKER_PHP_VERSION=$PHP_VERSION
 }
 
-
 # Run PHP in a Docker container
-# @TODO support Linux machine (switch to the current user)
 docker_php_run() {
 	local DOCKER_ARGS="-v /var/run/docker.sock:/var/run/docker.sock:ro"
 	if [ "$(uname -s)" = "Linux" ];then
 		DOCKER_ARGS="$DOCKER_ARGS -e USER_UID=$(id -u) -e USER_GID=$(id -g)"
+	else
+		DOCKER_ARGS="$DOCKER_ARGS -e USER_UID=1000 -e USER_GID=1000"
 	fi
 
 	docker run --rm -it \
