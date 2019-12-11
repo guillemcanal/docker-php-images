@@ -2,8 +2,8 @@
 set -e
 
 install() {
-	XDEBUG_VERSION=$(php -r 'print version_compare(PHP_VERSION, "7.0.0", ">=") ? "2.6.0" : "2.5.5";')
-	pecl install xdebug-${XDEBUG_VERSION}
+	XDEBUG_VERSION=$(php -r 'print version_compare(PHP_VERSION, "7.0.0", ">=") ? "" : "-2.5.5";')
+	pecl install xdebug${XDEBUG_VERSION}
 	docker-php-ext-enable xdebug
 }
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Initialize PHP environment variables
 # By default, it will use the images build from this repo, but you can use `library/php` instead
 docker_php_init() {
@@ -70,28 +72,55 @@ docker_php_version() {
 	export DOCKER_PHP_VERSION=$PHP_VERSION
 }
 
-# Run PHP in a Docker container
-docker_php_run() {
+# Check if the PHP Docker container is running
+docker_php_runnning() {
+	local STATE="$(docker inspect ${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} -f '{{.State.Running}}' 2> /dev/null || true)"
+	if [ "$STATE" == "true" ];then
+		return 0
+	fi
+	if [ "$STATE" == "false" ];then
+		docker start ${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} 1> /dev/null
+		return 0
+	fi
+	if [ "$STATE" == "" ]; then
+		docker_php_create
+		return 0
+	fi
+}
+
+# Create the Docker PHP Container
+docker_php_create() {
+	# Mount the Docker socket
 	local DOCKER_ARGS="-v /var/run/docker.sock:/var/run/docker.sock:ro"
+
+	# Ajust the docker user
 	if [ "$(uname -s)" = "Linux" ];then
 		DOCKER_ARGS="$DOCKER_ARGS -e USER_UID=$(id -u) -e USER_GID=$(id -g)"
 	else
 		DOCKER_ARGS="$DOCKER_ARGS -e USER_UID=1000 -e USER_GID=1000"
 	fi
 
-	docker run --rm -it \
+	docker run -d --name ${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} \
+	-v /tmp:/tmp \
 	-v $HOME:$HOME \
 	-v $HOME/.docker.composer:/var/composer \
-	-w $(pwd) \
+	-v /mnt/c:/mnt/c \
 	${DOCKER_ARGS} \
-	${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} "$@"
+	${DOCKER_PHP_IMAGE}:${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} sh -c 'sleep 2147483647' 1> /dev/null
+}
+
+# Run PHP in a Docker container
+docker_php_run() {
+	docker_php_runnning
+	set -- /usr/local/bin/docker-php-entrypoint "$@"
+	docker exec -ti -w "$(pwd)" ${DOCKER_PHP_VERSION}${DOCKER_PHP_IMAGE_VARIANT} "$@"
 }
 
 docker_php_push() {
 	docker push ${DOCKER_PHP_IMAGE}
 }
 
-# build a php image
+# Build a php image
 docker_php_build() {
 	local SCRIPT_DIR=$(docker_script_directory)
 	pushd "$SCRIPT_DIR" > /dev/null

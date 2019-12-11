@@ -19,7 +19,7 @@ main() {
 	done
 
 	# append the PHP command if the first argument if a non executable PHP file
-	if [[ -f "$1" && ! -x "$1" && "${1##*.}" = "php" ]]; then
+	if [[ -f "$1" && "${1##*.}" = "php" ]]; then
 		set -- php "$@"
 	fi
 
@@ -31,11 +31,10 @@ main() {
 	# execute the commamd with a given user
 	if [ -n "${USER_UID+x}" ] && [ -n "${USER_GID+x}" ];then
 		create_user
-		echo "[docker.info] running script as $USER_NAME $USER_UID:$USER_GID"
 		set -- su-exec ${USER_UID}:${USER_GID} "$@"
 	fi
 
-	exec "$@"
+	"$@"
 }
 
 main "$@"
